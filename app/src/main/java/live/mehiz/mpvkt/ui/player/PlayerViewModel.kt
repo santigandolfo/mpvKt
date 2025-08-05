@@ -484,7 +484,7 @@ class PlayerViewModel(
     playerUpdate.update { PlayerUpdates.AspectRatio }
   }
 
-  fun handleZoomGesture(zoomFactor: Float, panOffsetX: Float, panOffsetY: Float) {
+  fun handleZoomGesture(zoomFactor: Float) {
     // Allow zoom gesture in all aspect modes
     
     // Linear zoom: apply zoom factor more linearly for better feel
@@ -499,17 +499,6 @@ class PlayerViewModel(
     applyZoomSettings()
   }
   
-  private fun enableZoomMode() {
-    // Restore saved zoom level
-    val savedZoom = playerPreferences.savedZoomLevel.get().toDouble()
-    _zoomLevel.value = savedZoom
-    
-    MPVLib.setPropertyDouble("video-zoom", _zoomLevel.value)
-    // Reset pan to center - no panning needed since we removed it to avoid conflicts
-    MPVLib.setPropertyDouble("video-pan-x", 0.0)
-    MPVLib.setPropertyDouble("video-pan-y", 0.0)
-  }
-  
   private fun applyZoomSettings() {
     // Use logarithmic zoom calculation for better small zoom support
     val actualZoom = if (_zoomLevel.value < 1.0) {
@@ -520,16 +509,6 @@ class PlayerViewModel(
     }
     
     MPVLib.setPropertyDouble("video-zoom", actualZoom)
-    // Keep video centered - no panning since we removed it to avoid gesture conflicts
-    MPVLib.setPropertyDouble("video-pan-x", 0.0)
-    MPVLib.setPropertyDouble("video-pan-y", 0.0)
-  }
-  
-  private fun resetZoom() {
-    _zoomLevel.value = 1.0
-    MPVLib.setPropertyDouble("video-zoom", 1.0)
-    MPVLib.setPropertyDouble("video-pan-x", 0.0)
-    MPVLib.setPropertyDouble("video-pan-y", 0.0)
   }
 
   fun cycleScreenRotations() {

@@ -205,7 +205,7 @@ fun GestureHandler(
                     val zoom = currentDistance / previousDistance
                     if (zoom != 1.0f) {
                       event.changes.forEach { it.consume() }
-                      viewModel.handleZoomGesture(zoom, 0f, 0f)
+                      viewModel.handleZoomGesture(zoom)
                     }
                   }
                 }
