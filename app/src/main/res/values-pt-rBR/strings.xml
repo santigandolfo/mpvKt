@@ -183,6 +183,7 @@
     <string name="player_gesture_seek_indicator" translatable="false">%c%s\n[%s]</string>
 
     <string name="player_aspect_fit">Ajustar à tela</string>
+    <string name="player_aspect_zoom">Zoom</string>
     <string name="player_aspect_crop">Cortar</string>
     <string name="player_aspect_stretch">Esticar</string>
 

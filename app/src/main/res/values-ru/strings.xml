@@ -215,6 +215,7 @@
     <string name="player_seek_n_seconds">%d секунды</string>
 
     <string name="player_aspect_fit">Подогнать под экран</string>
+    <string name="player_aspect_zoom">Масштаб</string>
     <string name="player_aspect_crop">Обрезать</string>
     <string name="player_aspect_stretch">Растянуть</string>
 

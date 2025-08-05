@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import live.mehiz.mpvkt.R
 import live.mehiz.mpvkt.database.MpvKtDatabase
 import live.mehiz.mpvkt.database.entities.CustomButtonEntity
@@ -46,7 +47,7 @@ class PlayerViewModelProviderFactory(
 class PlayerViewModel(
   private val activity: PlayerActivity,
 ) : ViewModel() {
-  private val playerPreferences: PlayerPreferences by inject(PlayerPreferences::class.java)
+  internal val playerPreferences: PlayerPreferences by inject(PlayerPreferences::class.java)
   private val gesturePreferences: GesturePreferences by inject(GesturePreferences::class.java)
   private val mpvKtDatabase: MpvKtDatabase by inject(MpvKtDatabase::class.java)
 
@@ -87,6 +88,11 @@ class PlayerViewModel(
 
   val isLoading = MutableStateFlow(true)
   val playbackSpeed = MutableStateFlow(playerPreferences.defaultSpeed.get())
+
+  private val _zoomLevel = MutableStateFlow(1.0)
+  val zoomLevel = _zoomLevel.asStateFlow()
+
+
 
   private val _subtitleTracks = MutableStateFlow<List<Track>>(emptyList())
   val subtitleTracks = _subtitleTracks.asStateFlow()
@@ -442,29 +448,96 @@ class PlayerViewModel(
   }
 
   fun changeVideoAspect(aspect: VideoAspect) {
-    var ratio = -1.0
-    var pan = 1.0
-    when (aspect) {
-      VideoAspect.Crop -> {
-        pan = 1.0
+    val (pan, ratio) = when (aspect) {
+      VideoAspect.Zoom -> {
+        // Zoom mode: preserves aspect ratio, allows pinch-to-zoom beyond 100%
+        0.0 to -1.0
       }
 
       VideoAspect.Fit -> {
-        pan = 0.0
-        MPVLib.setPropertyDouble("panscan", 0.0)
+        // Fits entire video within screen (may show black bars)
+        0.0 to -1.0
+      }
+
+      VideoAspect.Crop -> {
+        // Traditional crop: fills screen by cropping video
+        1.0 to -1.0
       }
 
       VideoAspect.Stretch -> {
+        // Distorts video to match screen dimensions
         val dm = DisplayMetrics()
         activity.windowManager.defaultDisplay.getRealMetrics(dm)
-        ratio = dm.widthPixels / dm.heightPixels.toDouble()
-        pan = 0.0
+        val screenRatio = dm.widthPixels / dm.heightPixels.toDouble()
+        0.0 to screenRatio
       }
     }
     MPVLib.setPropertyDouble("panscan", pan)
     MPVLib.setPropertyDouble("video-aspect-override", ratio)
+    MPVLib.setPropertyString("video-unscaled", "no")
+    val keepAspect = when (aspect) {
+      VideoAspect.Stretch -> "no"
+      else -> "yes"
+    }
+    MPVLib.setPropertyString("keepaspect", keepAspect)
+    
+    // Reset zoom when changing aspect modes
+    if (aspect != VideoAspect.Zoom) {
+      resetZoom()
+    } else {
+      // Enable zoom mode
+      enableZoomMode()
+    }
     playerPreferences.videoAspect.set(aspect)
     playerUpdate.update { PlayerUpdates.AspectRatio }
+  }
+
+  fun handleZoomGesture(zoomFactor: Float, panOffsetX: Float, panOffsetY: Float) {
+    if (playerPreferences.videoAspect.get() != VideoAspect.Zoom) return
+    
+    // Linear zoom: apply zoom factor more linearly for better feel
+    val zoomChange = (zoomFactor - 1.0) * 0.5  // Reduce sensitivity for linear feel
+    val newZoom = (_zoomLevel.value + zoomChange).coerceIn(0.1, 20.0)  // Ultra zoom out: 10% to 2000%
+    
+    _zoomLevel.value = newZoom
+    
+    // Save zoom level to preferences
+    playerPreferences.savedZoomLevel.set(newZoom.toFloat())
+    
+    applyZoomSettings()
+  }
+  
+  private fun enableZoomMode() {
+    // Restore saved zoom level
+    val savedZoom = playerPreferences.savedZoomLevel.get().toDouble()
+    _zoomLevel.value = savedZoom
+    
+    MPVLib.setPropertyDouble("video-zoom", _zoomLevel.value)
+    // Reset pan to center - no panning needed since we removed it to avoid conflicts
+    MPVLib.setPropertyDouble("video-pan-x", 0.0)
+    MPVLib.setPropertyDouble("video-pan-y", 0.0)
+  }
+  
+  private fun applyZoomSettings() {
+    // Use logarithmic zoom calculation for better small zoom support
+    val actualZoom = if (_zoomLevel.value < 1.0) {
+      // For zoom out: use more aggressive scaling
+      _zoomLevel.value * _zoomLevel.value  // Square for more zoom out range
+    } else {
+      _zoomLevel.value
+    }
+    
+    MPVLib.setPropertyDouble("video-zoom", actualZoom)
+    // Keep video centered - no panning since we removed it to avoid gesture conflicts
+    MPVLib.setPropertyDouble("video-pan-x", 0.0)
+    MPVLib.setPropertyDouble("video-pan-y", 0.0)
+  }
+  
+  private fun resetZoom() {
+    _zoomLevel.value = 1.0
+    MPVLib.setPropertyDouble("video-zoom", 1.0)
+    MPVLib.setPropertyDouble("video-pan-x", 0.0)
+    MPVLib.setPropertyDouble("video-pan-y", 0.0)
   }
 
   fun cycleScreenRotations() {

@@ -48,6 +48,8 @@ class PlayerPreferences(
   val showSystemStatusBar = preferenceStore.getBoolean("show_system_status_bar")
   val reduceMotion = preferenceStore.getBoolean("reduce_motion")
   val playerTimeToDisappear = preferenceStore.getInt("player_time_to_disappear", 4000)
+  
+  val savedZoomLevel = preferenceStore.getFloat("zoom_level", 1.0f)
 
   val panelTransparency = preferenceStore.getFloat("panel_transparency", 0.6f)
 

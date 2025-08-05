@@ -156,6 +156,7 @@
     <string name="player_sheets_custom_buttons_title">自定义按钮</string>
     <string name="player_seek_n_seconds">%d 秒</string>
     <string name="player_aspect_fit">适应屏幕</string>
+    <string name="player_aspect_zoom">缩放</string>
     <string name="player_aspect_crop">裁剪</string>
     <string name="player_aspect_stretch">拉伸</string>
     <string name="crash_screen_title">糟糕</string>

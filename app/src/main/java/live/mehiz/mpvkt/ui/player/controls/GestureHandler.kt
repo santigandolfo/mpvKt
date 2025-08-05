@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -50,6 +51,7 @@ import live.mehiz.mpvkt.presentation.components.RightSideOvalShape
 import live.mehiz.mpvkt.ui.player.Panels
 import live.mehiz.mpvkt.ui.player.PlayerUpdates
 import live.mehiz.mpvkt.ui.player.PlayerViewModel
+import live.mehiz.mpvkt.ui.player.VideoAspect
 import live.mehiz.mpvkt.ui.player.controls.components.DoubleTapSeekTriangles
 import live.mehiz.mpvkt.ui.theme.playerRippleConfiguration
 import org.koin.compose.koinInject
@@ -93,6 +95,7 @@ fun GestureHandler(
   val currentBrightness by viewModel.currentBrightness.collectAsState()
   val volumeBoostingCap = audioPreferences.volumeBoostCap.get()
   val haptics = LocalHapticFeedback.current
+  val aspectRatio by viewModel.playerPreferences.videoAspect.collectAsState()
   Box(
     modifier = modifier
       .fillMaxSize()
@@ -158,8 +161,9 @@ fun GestureHandler(
           },
         )
       }
-      .pointerInput(areControlsLocked) {
-        if (!seekGesture || areControlsLocked) return@pointerInput
+      .pointerInput(areControlsLocked, seekGesture, aspectRatio) {
+        // Horizontal seek gesture (only when NOT in zoom mode to avoid conflicts)  
+        if (!seekGesture || areControlsLocked || aspectRatio == VideoAspect.Zoom) return@pointerInput
         var startingPosition = position.toInt()
         var startingX = 0f
         var wasPlayerAlreadyPause = false
@@ -268,6 +272,15 @@ fun GestureHandler(
             // it's not always true, AS is drunk
             volumeGesture -> changeVolume()
             else -> {}
+          }
+        }
+      }
+      .pointerInput(areControlsLocked, aspectRatio) {
+        // Pinch-to-zoom gesture (only active in zoom mode to avoid conflicts)
+        if (aspectRatio == VideoAspect.Zoom) {
+          detectTransformGestures { _, _, zoom, _ ->
+            if (areControlsLocked || panelShown != Panels.None) return@detectTransformGestures
+            viewModel.handleZoomGesture(zoom, 0f, 0f)
           }
         }
       },
