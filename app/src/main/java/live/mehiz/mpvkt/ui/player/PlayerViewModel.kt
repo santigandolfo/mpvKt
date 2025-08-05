@@ -89,7 +89,7 @@ class PlayerViewModel(
   val isLoading = MutableStateFlow(true)
   val playbackSpeed = MutableStateFlow(playerPreferences.defaultSpeed.get())
 
-  private val _zoomLevel = MutableStateFlow(1.0)
+  private val _zoomLevel = MutableStateFlow(playerPreferences.savedZoomLevel.get().toDouble())
   val zoomLevel = _zoomLevel.asStateFlow()
 
 
@@ -449,11 +449,6 @@ class PlayerViewModel(
 
   fun changeVideoAspect(aspect: VideoAspect) {
     val (pan, ratio) = when (aspect) {
-      VideoAspect.Zoom -> {
-        // Zoom mode: preserves aspect ratio, allows pinch-to-zoom beyond 100%
-        0.0 to -1.0
-      }
-
       VideoAspect.Fit -> {
         // Fits entire video within screen (may show black bars)
         0.0 to -1.0
@@ -481,19 +476,16 @@ class PlayerViewModel(
     }
     MPVLib.setPropertyString("keepaspect", keepAspect)
     
-    // Reset zoom when changing aspect modes
-    if (aspect != VideoAspect.Zoom) {
-      resetZoom()
-    } else {
-      // Enable zoom mode
-      enableZoomMode()
-    }
+    // Zoom is now always available as a gesture overlay, no need to reset
+    // Keep current zoom level when changing aspect modes
+    applyZoomSettings()
+    
     playerPreferences.videoAspect.set(aspect)
     playerUpdate.update { PlayerUpdates.AspectRatio }
   }
 
   fun handleZoomGesture(zoomFactor: Float, panOffsetX: Float, panOffsetY: Float) {
-    if (playerPreferences.videoAspect.get() != VideoAspect.Zoom) return
+    // Allow zoom gesture in all aspect modes
     
     // Linear zoom: apply zoom factor more linearly for better feel
     val zoomChange = (zoomFactor - 1.0) * 0.5  // Reduce sensitivity for linear feel

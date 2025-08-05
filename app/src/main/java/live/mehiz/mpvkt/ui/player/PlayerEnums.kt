@@ -18,7 +18,6 @@ enum class PlayerOrientation(@StringRes val titleRes: Int) {
 
 enum class VideoAspect(@StringRes val titleRes: Int) {
   Crop(R.string.player_aspect_crop),
-  Zoom(R.string.player_aspect_zoom),
   Fit(R.string.player_aspect_fit),
   Stretch(R.string.player_aspect_stretch),
 }

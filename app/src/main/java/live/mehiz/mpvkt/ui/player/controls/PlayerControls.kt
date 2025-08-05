@@ -509,8 +509,7 @@ fun PlayerControls(
                 when (aspectRatio) {
                   VideoAspect.Fit -> VideoAspect.Stretch
                   VideoAspect.Stretch -> VideoAspect.Crop
-                  VideoAspect.Crop -> VideoAspect.Zoom
-                  VideoAspect.Zoom -> VideoAspect.Fit
+                  VideoAspect.Crop -> VideoAspect.Fit
                 },
               )
             },
