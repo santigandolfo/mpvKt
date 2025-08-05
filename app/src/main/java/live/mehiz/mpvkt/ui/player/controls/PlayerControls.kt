@@ -108,6 +108,7 @@ fun PlayerControls(
   val position by viewModel.pos.collectAsState()
   val paused by viewModel.paused.collectAsState()
   val gestureSeekAmount by viewModel.gestureSeekAmount.collectAsState()
+  val gestureZoomAmount by viewModel.gestureZoomAmount.collectAsState()
   val doubleTapSeekAmount by viewModel.doubleTapSeekAmount.collectAsState()
   val showDoubleTapOvals by playerPreferences.showDoubleTapOvals.collectAsState()
   val showSeekIcon by playerPreferences.showSeekIcon.collectAsState()
@@ -197,14 +198,7 @@ fun PlayerControls(
         val swapVolumeAndBrightness by playerPreferences.swapVolumeAndBrightness.collectAsState()
         val reduceMotion by playerPreferences.reduceMotion.collectAsState()
 
-        LaunchedEffect(volume, mpvVolume, isVolumeSliderShown) {
-          delay(2000)
-          if (isVolumeSliderShown) viewModel.isVolumeSliderShown.update { false }
-        }
-        LaunchedEffect(brightness, isBrightnessSliderShown) {
-          delay(2000)
-          if (isBrightnessSliderShown) viewModel.isBrightnessSliderShown.update { false }
-        }
+
         AnimatedVisibility(
           isBrightnessSliderShown,
           enter =
@@ -326,7 +320,7 @@ fun PlayerControls(
           )
         }
         AnimatedVisibility(
-          visible = (controlsShown && !areControlsLocked || gestureSeekAmount != null) || isLoading,
+          visible = (controlsShown && !areControlsLocked || gestureSeekAmount != null || gestureZoomAmount != null) || isLoading,
           enter = fadeIn(playerControlsEnterAnimationSpec()),
           exit = fadeOut(playerControlsExitAnimationSpec()),
           modifier = Modifier.constrainAs(playerPauseButton) {
@@ -348,6 +342,17 @@ fun PlayerControls(
                   Utils.prettyTime(abs(gestureSeekAmount!!.second)),
                   Utils.prettyTime(gestureSeekAmount!!.first + gestureSeekAmount!!.second),
                 ),
+                style = MaterialTheme.typography.headlineMedium.copy(
+                  shadow = Shadow(Color.Black, blurRadius = 5f),
+                ),
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+              )
+            }
+            
+            gestureZoomAmount != null -> {
+              Text(
+                "${gestureZoomAmount!!.toInt()}%",
                 style = MaterialTheme.typography.headlineMedium.copy(
                   shadow = Shadow(Color.Black, blurRadius = 5f),
                 ),

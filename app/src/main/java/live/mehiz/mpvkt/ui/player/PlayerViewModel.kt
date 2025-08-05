@@ -144,6 +144,9 @@ class PlayerViewModel(
 
   // Pair(startingPosition, seekAmount)
   val gestureSeekAmount = MutableStateFlow<Pair<Int, Int>?>(null)
+  
+  // Zoom percentage display
+  val gestureZoomAmount = MutableStateFlow<Float?>(null)
 
   private val _seekText = MutableStateFlow<String?>(null)
   val seekText = _seekText.asStateFlow()
@@ -406,8 +409,12 @@ class PlayerViewModel(
     }
   }
 
-  fun displayBrightnessSlider() {
+  fun showBrightnessSlider() {
     isBrightnessSliderShown.update { true }
+  }
+  
+  fun hideBrightnessSlider() {
+    isBrightnessSliderShown.update { false }
   }
 
   val maxVolume = activity.audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
@@ -439,12 +446,24 @@ class PlayerViewModel(
   }
 
   fun setMPVVolume(volume: Int) {
-    if (volume != currentMPVVolume.value) displayVolumeSlider()
+    if (volume != currentMPVVolume.value) showVolumeSlider()
     currentMPVVolume.update { volume }
   }
 
-  fun displayVolumeSlider() {
+  fun showVolumeSlider() {
     isVolumeSliderShown.update { true }
+  }
+  
+  fun hideVolumeSlider() {
+    isVolumeSliderShown.update { false }
+  }
+
+  fun showZoomIndicator() {
+    gestureZoomAmount.update { (_zoomLevel.value * 100).toFloat() }
+  }
+  
+  fun hideZoomIndicator() {
+    gestureZoomAmount.update { null }
   }
 
   fun changeVideoAspect(aspect: VideoAspect) {
@@ -497,6 +516,7 @@ class PlayerViewModel(
     playerPreferences.savedZoomLevel.set(newZoom.toFloat())
     
     applyZoomSettings()
+    showZoomIndicator()
   }
   
   private fun applyZoomSettings() {

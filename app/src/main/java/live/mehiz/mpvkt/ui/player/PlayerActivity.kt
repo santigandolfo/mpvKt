@@ -760,12 +760,12 @@ class PlayerActivity : AppCompatActivity() {
     when (keyCode) {
       KeyEvent.KEYCODE_VOLUME_UP -> {
         viewModel.changeVolumeBy(1)
-        viewModel.displayVolumeSlider()
+        viewModel.showVolumeSlider()
       }
 
       KeyEvent.KEYCODE_VOLUME_DOWN -> {
         viewModel.changeVolumeBy(-1)
-        viewModel.displayVolumeSlider()
+        viewModel.showVolumeSlider()
       }
 
       KeyEvent.KEYCODE_DPAD_RIGHT -> viewModel.handleLeftDoubleTap()

@@ -176,6 +176,8 @@ fun GestureHandler(
         var originalVolume = currentVolume
         var originalMPVVolume = currentMPVVolume
         var originalBrightness = currentBrightness
+        var isZoomGestureActive = false
+        var isVolumeBrightnessGestureActive = false
         val brightnessGestureSens = 0.001f
         val volumeGestureSens = 0.03f
         val mpvVolumeGestureSens = 0.02f
@@ -196,6 +198,10 @@ fun GestureHandler(
               // Multi-touch for zoom
               event.changes.size >= 2 -> {
                 if (panelShown == Panels.None) {
+                  if (!isZoomGestureActive) {
+                    isZoomGestureActive = true
+                  }
+                  
                   val change1 = event.changes[0]
                   val change2 = event.changes[1]
                   val currentDistance = (change1.position - change2.position).getDistance()
@@ -208,11 +214,20 @@ fun GestureHandler(
                       viewModel.handleZoomGesture(zoom)
                     }
                   }
+                } else if (isZoomGestureActive) {
+                  // Panel opened during zoom gesture, end zoom
+                  isZoomGestureActive = false
+                  viewModel.hideZoomIndicator()
                 }
               }
               
               // Single touch for drag gestures
               event.changes.size == 1 -> {
+                // End zoom gesture if switching from multi-touch to single touch
+                if (isZoomGestureActive) {
+                  isZoomGestureActive = false
+                  viewModel.hideZoomIndicator()
+                }
                 val change = event.changes[0]
                 
                 when {
@@ -232,6 +247,9 @@ fun GestureHandler(
                       }
                       "volume_brightness" -> {
                         startingY = 0f
+                        isVolumeBrightnessGestureActive = false
+                        viewModel.hideVolumeSlider()
+                        viewModel.hideBrightnessSlider()
                       }
                     }
                     gestureType = null
@@ -259,6 +277,7 @@ fun GestureHandler(
                           originalVolume = currentVolume
                           originalMPVVolume = currentMPVVolume
                           originalBrightness = currentBrightness
+                          isVolumeBrightnessGestureActive = true
                           "volume_brightness"
                         }
                         else -> null
@@ -311,14 +330,14 @@ fun GestureHandler(
                               calculateNewVerticalGestureValue(originalVolume, startingY, change.position.y, volumeGestureSens),
                             )
                           }
-                          viewModel.displayVolumeSlider()
+                          if (isVolumeBrightnessGestureActive) viewModel.showVolumeSlider()
                         }
                         val changeBrightness: () -> Unit = {
                           if (startingY == 0f) startingY = change.position.y
                           viewModel.changeBrightnessTo(
                             calculateNewVerticalGestureValue(originalBrightness, startingY, change.position.y, brightnessGestureSens),
                           )
-                          viewModel.displayBrightnessSlider()
+                          if (isVolumeBrightnessGestureActive) viewModel.showBrightnessSlider()
                         }
                         
                         when {
@@ -336,6 +355,19 @@ fun GestureHandler(
                       }
                     }
                   }
+                }
+              }
+              
+              // No touches - end any active gestures
+              else -> {
+                if (isZoomGestureActive) {
+                  isZoomGestureActive = false
+                  viewModel.hideZoomIndicator()
+                }
+                if (isVolumeBrightnessGestureActive) {
+                  isVolumeBrightnessGestureActive = false
+                  viewModel.hideVolumeSlider()
+                  viewModel.hideBrightnessSlider()
                 }
               }
             }
